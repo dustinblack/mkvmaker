@@ -1,4 +1,4 @@
-#  mkvmaker simple VOB to MKV transcoder script v0.95
+#  mkvmaker simple VOB to MKV transcoder script v0.96
 #
 #  Copyright (C) 2015  Dustin Louis Black (dustin at redshade dot net)
 #
