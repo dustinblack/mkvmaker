@@ -1,4 +1,4 @@
-#  mkvmaker simple VOB to MKV transcoder script v0.96
+#  mkvmaker simple VOB to MKV transcoder script v0.97
 #
 #  Copyright (C) 2015  Dustin Louis Black (dustin at redshade dot net)
 #
@@ -25,6 +25,8 @@ VOB file transcoder
 
 Usage: $(basename "${0}") [-c] [-d] [-h] [-t] [-T] <file path>
 
+  -b : tune for high definition (blu-ray)
+
   -c <crop value> : formatted w:h:x:y (optional - auto-detected if omitted)
                     get this from the output of:
                     'mplayer <file path> -vf cropdetect'
@@ -45,14 +47,11 @@ Usage: $(basename "${0}") [-c] [-d] [-h] [-t] [-T] <file path>
 END
 }
 
-function _probecrop {
-# Auto-grab video crop value
-echo "Probing video crop value... this may take a minute..."
-crop=$(mplayer -ao null -ss 60 -frames 500 -vf cropdetect -vo null "${vobfile}" 2>/dev/null | awk -F '[()]' '{print $2}' | uniq | grep -Ev 'End of file' | tail -2 | awk -F= '{print $2}')
-}
-
-while getopts ":c:dht:T" opt; do
+while getopts ":bc:dht:T" opt; do
 case ${opt} in
+  b)
+    bluray=1
+    ;;
   c)
     if [[ ${crop} ]] ; then
       echo "ERROR: Option repeated: -${OPTARG}" >&2
@@ -121,22 +120,33 @@ fi
 
 echo -e "Tuning for ${tune_type}...\n"
 
+# Set probe crop command
+probecrop_cmd="mplayer -ao null -ss 60 -frames 500 -vf cropdetect -vo null "${vobfile}" 2>/dev/null | awk -F '[()]' '{print $2}' | uniq | grep -Ev 'End of file' | tail -2 | awk -F= '{print $2}'"
+
 if [[ ! ${crop} ]] ; then
+# Auto-grab video crop value
   echo "Option -c (crop) not specified"
+  echo "Probing video crop value... this may take a minute..."
   if [[ ${just_test} ]] ;  then
-    echo -e "Test run; skipping probe.\n"
+    echo "${probecrop_cmd}"
   else
-    _probecrop
+    crop=$(probecrop_cmd)
+    echo -e "Crop is: ${crop}\n"
   fi
 fi
-
-echo -e "Crop is: ${crop}\n"
 
 
 name="$(basename "${vobfile}" .vob)"
 
+# Set bitrate
+if [[ ${bluray} ]] ; then
+  bitrate=2400
+else
+  bitrate=1400
+fi
+
 # Set mencoder base command
-menc_cmd="mencoder ${vobfile} -sid 0 -forcedsubsonly -passlogfile ${name}.log -vf pullup,softskip,crop=${crop},hqdn3d=2:1:2,harddup -ofps 24000/1001 -alang en -oac faac -faacopts br=192:object=2 -ovc x264 -x264encopts bitrate=1400:tune=${tune_type}:bframes=4:pass="
+menc_cmd="mencoder ${vobfile} -sid 0 -forcedsubsonly -passlogfile ${name}.log -vf pullup,softskip,crop=${crop},hqdn3d=2:1:2,harddup -ofps 24000/1001 -alang en -oac faac -faacopts br=192:object=2 -ovc x264 -x264encopts bitrate=${bitrate}:tune=${tune_type}:bframes=4:pass="
 
 
 echo -e "\nStarting Transcode Pass 1..."

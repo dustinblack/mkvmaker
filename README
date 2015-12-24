@@ -14,3 +14,8 @@ without actually executing them.
 Good luck, and feedback and collaboration are highly encouraged!
 
 dustin at redshade dot net
+
+v0.97 -- Added the -b flag to increase the video bitrate for high
+definition input (bluray). Also moved the probe crop out of a function
+and changed the syntax so that the probe command will display when doing
+a -T test run.
