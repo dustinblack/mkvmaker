@@ -1,4 +1,4 @@
-#  mkvmaker simple VOB to MKV transcoder script v0.97
+#  mkvmaker simple VOB to MKV transcoder script v0.98
 #
 #  Copyright (C) 2015  Dustin Louis Black (dustin at redshade dot net)
 #
@@ -121,7 +121,8 @@ fi
 echo -e "Tuning for ${tune_type}...\n"
 
 # Set probe crop command
-probecrop_cmd="mplayer -ao null -ss 60 -frames 500 -vf cropdetect -vo null "${vobfile}" 2>/dev/null | awk -F '[()]' '{print $2}' | uniq | grep -Ev 'End of file' | tail -2 | awk -F= '{print $2}'"
+#probecrop_cmd="mplayer -ao null -ss 60 -frames 500 -vf cropdetect -vo null "${vobfile}" 2>/dev/null | awk -F '[()]' '{print $2}' | uniq | grep -Ev 'End of file' | tail -2 | awk -F= '{print $2}'"
+probecrop_cmd="mplayer -ao null -ss 60 -frames 500 -vf cropdetect -vo null "${vobfile}" 2>/dev/null | grep crop | tail -1 | awk -F= '{print $2}' | awk -F\) '{print $1}'
 
 if [[ ! ${crop} ]] ; then
 # Auto-grab video crop value
