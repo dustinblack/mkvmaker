@@ -16,6 +16,9 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+mplayer="/usr/bin/mplayer"
+mencoder="/usr/bin/mencoder"
+
 function _usage {
   cat <<END
 
@@ -123,7 +126,7 @@ echo -e "Tuning for ${tune_type}...\n"
 # Set probe crop command
 #probecrop_cmd="mplayer -ao null -ss 60 -frames 500 -vf cropdetect -vo null "${vobfile}" 2>/dev/null | awk -F '[()]' '{print $2}' | uniq | grep -Ev 'End of file' | tail -2 | awk -F= '{print $2}'"
 #probecrop_cmd="mplayer -ao null -ss 60 -frames 500 -vf cropdetect -vo null ${vobfile} 2>/dev/null | grep crop | tail -1 | awk -F= '{print \$2}' | awk -F\) '{print \$1}'"
-probecrop_cmd="mplayer -ao null -ss 60 frames 500 -vf cropdetect -vo null vobs/maze_runner-scorch_trials.vob 2>/dev/null | grep VO | tail -1 | awk -F= '{print \$2}' | awk '{print \$2}'"
+probecrop_cmd="${mplayer} -ao null -ss 60 frames 500 -vf cropdetect -vo null vobs/maze_runner-scorch_trials.vob 2>/dev/null | grep VO | tail -1 | awk -F= '{print \$2}' | awk '{print \$2}'"
 
 if [[ ! ${crop} ]] ; then
 # Auto-grab video crop value
@@ -149,7 +152,7 @@ fi
 
 # Set mencoder base command
 #menc_cmd="mencoder ${vobfile} -sid 0 -forcedsubsonly -passlogfile ${name}.log -vf pullup,softskip,crop=${crop},hqdn3d=2:1:2,harddup -ofps 24000/1001 -alang en -oac faac -faacopts br=192:object=2 -ovc x264 -x264encopts bitrate=${bitrate}:tune=${tune_type}:bframes=4:pass="
-menc_cmd="mencoder ${vobfile} -sid 0 -forcedsubsonly -vf pullup,softskip,crop=${crop},hqdn3d=2:1:2,harddup -ofps 24000/1001 -alang en -oac faac -faacopts br=192:object=2 -ovc x264 -x264encopts preset=slow:crf=25:bitrate=${bitrate}:tune=${tune_type}:bframes=4:subq=8:frameref=6:partitions=all"
+menc_cmd="${mencoder} ${vobfile} -sid 0 -forcedsubsonly -vf pullup,softskip,crop=${crop},hqdn3d=2:1:2,harddup -ofps 24000/1001 -alang en -oac faac -faacopts br=192:object=2 -ovc x264 -x264encopts preset=slow:crf=25:bitrate=${bitrate}:tune=${tune_type}:bframes=4:subq=8:frameref=6:partitions=all"
 
 
 #echo -e "\nStarting Transcode Pass 1..."
@@ -171,7 +174,7 @@ else
 fi
 
 echo -e "\nDumping Dolby AC3 Audio..."
-ac3dump="mplayer ${vobfile} -alang en -dumpaudio -dumpfile ${name}.ac3"
+ac3dump="${mplayer} ${vobfile} -alang en -dumpaudio -dumpfile ${name}.ac3"
 if [[ ${just_test} ]] ; then
   echo "${ac3dump}"
 else
