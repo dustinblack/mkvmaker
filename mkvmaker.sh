@@ -1,4 +1,4 @@
-#  mkvmaker simple VOB to MKV transcoder script v0.98
+#  mkvmaker simple VOB to MKV transcoder script v1.0
 #
 #  Copyright (C) 2015  Dustin Louis Black (dustin at redshade dot net)
 #
@@ -28,6 +28,8 @@ VOB file transcoder
 
 Usage: $(basename "${0}") [-c] [-d] [-h] [-t] [-T] <file path>
 
+  -a <aac|mp3> : choose (aac) or (mp3) audio encoding (mp3 default)
+
   -b : tune for high definition (blu-ray)
 
   -c <crop value> : formatted w:h:x:y (optional - auto-detected if omitted)
@@ -50,8 +52,19 @@ Usage: $(basename "${0}") [-c] [-d] [-h] [-t] [-T] <file path>
 END
 }
 
-while getopts ":bc:dht:T" opt; do
+while getopts ":a:bc:dht:T" opt; do
 case ${opt} in
+  a)
+    if [[ ${oac_opts} ]] ; then
+      echo "ERROR: Option repeated: -${OPTARG}" >&2
+      _usage
+      exit 1
+    elif [[ ${OPTARG} == "aac" ]] ; then
+      oac_opts="faac -faacopts br=192:object=2"
+    else
+      oac_opts="twolame -twolameopts br=192"
+    fi
+    ;;
   b)
     bluray=1
     ;;
@@ -121,6 +134,11 @@ if [[ ! ${tune_type} ]] ; then
   tune_type="film"
 fi
 
+if [[ ! ${oac_opts} ]] ; then
+  echo -e "Option -a (audio encoder) not specified; assuming mp3 (twolame)\n"
+  oac_opts="twolame -twolameopts br=192"
+fi
+
 echo -e "Tuning for ${tune_type}...\n"
 
 # Set probe crop command
@@ -151,7 +169,8 @@ fi
 
 # Set mencoder base command
 #menc_cmd="mencoder ${vobfile} -sid 0 -forcedsubsonly -passlogfile ${name}.log -vf pullup,softskip,crop=${crop},hqdn3d=2:1:2,harddup -ofps 24000/1001 -alang en -oac faac -faacopts br=192:object=2 -ovc x264 -x264encopts bitrate=${bitrate}:tune=${tune_type}:bframes=4:pass="
-menc_cmd="${mencoder} ${vobfile} -sid 0 -forcedsubsonly -vf pullup,softskip,crop=${crop},hqdn3d=2:1:2,harddup -ofps 24000/1001 -alang en -oac faac -faacopts br=192:object=2 -ovc x264 -x264encopts preset=slow:crf=25:bitrate=${bitrate}:tune=${tune_type}:bframes=4:subq=8:frameref=6:partitions=all"
+#menc_cmd="${mencoder} ${vobfile} -sid 0 -forcedsubsonly -vf pullup,softskip,crop=${crop},hqdn3d=2:1:2,harddup -ofps 24000/1001 -alang en -oac faac -faacopts br=192:object=2 -ovc x264 -x264encopts preset=slow:crf=25:bitrate=${bitrate}:tune=${tune_type}:bframes=4:subq=8:frameref=6:partitions=all"
+menc_cmd="${mencoder} ${vobfile} -sid 0 -forcedsubsonly -vf pullup,softskip,crop=${crop},hqdn3d=2:1:2,harddup -ofps 24000/1001 -alang en -oac ${oac_opts} -ovc x264 -x264encopts preset=slow:crf=25:bitrate=${bitrate}:tune=${tune_type}:bframes=4:subq=8:frameref=6:partitions=all"
 
 
 #echo -e "\nStarting Transcode Pass 1..."

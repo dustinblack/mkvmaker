@@ -1,7 +1,7 @@
 mkvmaker is a simple bash scrip utilizing mplayer, mencoder, mkvmerge, and
 mkvpropedit to convert a source VOB video file (assumed from an NTSC DVD)
-to a quality matroska .mkv file with x264 compressed video, AAC compressed
-stereo audio, and preserved AC3 Dolby surround audio.
+to a quality matroska .mkv file with x264 compressed video, MP3 or AAC
+compressed stereo audio, and preserved AC3 Dolby surround audio.
 
 This tool is designed around my personal preferences for a/v quality,
 portability, and file size. It works effectively on its own for me maybe
