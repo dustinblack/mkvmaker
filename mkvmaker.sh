@@ -143,12 +143,17 @@ echo -e "Tuning for ${tune_type}...\n"
 
 # Set probe crop command
 #probecrop_cmd="mplayer -ao null -ss 60 -frames 500 -vf cropdetect -vo null "${vobfile}" 2>/dev/null | awk -F '[()]' '{print $2}' | uniq | grep -Ev 'End of file' | tail -2 | awk -F= '{print $2}'"
-probecrop_cmd="mplayer -ao null -ss 60 -frames 500 -vf cropdetect -vo null ${vobfile} 2>/dev/null | grep crop | tail -1 | awk -F= '{print \$2}' | awk -F\) '{print \$1}'"
+#probecrop_cmd="mplayer -ao null -ss 60 -frames 500 -vf cropdetect -vo null ${vobfile} 2>/dev/null | grep crop | tail -1 | awk -F= '{print \$2}' | awk -F\) '{print \$1}'"
+# 2017-12-28
+# Skip to 10 minutes in (-ss), skip 1 second between frames (-sstep), and check 600 frames (-frames)
+# This should be more precise, cutting out any darkness at the beginning of the video and capturing
+# the equivalent of 10 minutes worth of frames.
+probecrop_cmd="mplayer -ao null -ss 10:00 -sstep 1 -frames 600 -vf cropdetect -vo null ${vobfile} 2>/dev/null | grep crop | tail -1 | awk -F= '{print \$2}' | awk -F\) '{print \$1}'"
 
 if [[ ! ${crop} ]] ; then
 # Auto-grab video crop value
   echo "Option -c (crop) not specified"
-  echo "Probing video crop value... this may take a minute..."
+  echo "Probing video crop value; this will take a minute..."
   if [[ ${just_test} ]] ;  then
     echo "${probecrop_cmd}"
   else
