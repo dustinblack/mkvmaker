@@ -161,6 +161,8 @@ fi
 name="$(basename "${vobfile}" .vob)"
 
 # Set bitrate
+# Note: This is placebo as of 2017-12-28 update, as the
+# mencoder string has been standardized (for now).
 if [[ ${bluray} ]] ; then
   bitrate=2400
 else
@@ -170,7 +172,9 @@ fi
 # Set mencoder base command
 #menc_cmd="mencoder ${vobfile} -sid 0 -forcedsubsonly -passlogfile ${name}.log -vf pullup,softskip,crop=${crop},hqdn3d=2:1:2,harddup -ofps 24000/1001 -alang en -oac faac -faacopts br=192:object=2 -ovc x264 -x264encopts bitrate=${bitrate}:tune=${tune_type}:bframes=4:pass="
 #menc_cmd="${mencoder} ${vobfile} -sid 0 -forcedsubsonly -vf pullup,softskip,crop=${crop},hqdn3d=2:1:2,harddup -ofps 24000/1001 -alang en -oac faac -faacopts br=192:object=2 -ovc x264 -x264encopts preset=slow:crf=25:bitrate=${bitrate}:tune=${tune_type}:bframes=4:subq=8:frameref=6:partitions=all"
-menc_cmd="${mencoder} ${vobfile} -sid 0 -forcedsubsonly -vf pullup,softskip,crop=${crop},hqdn3d=2:1:2,harddup -ofps 24000/1001 -alang en -oac ${oac_opts} -ovc x264 -x264encopts preset=slow:crf=25:bitrate=${bitrate}:tune=${tune_type}:bframes=4:subq=8:frameref=6:partitions=all"
+#menc_cmd="${mencoder} ${vobfile} -sid 0 -forcedsubsonly -vf pullup,softskip,crop=${crop},hqdn3d=2:1:2,harddup -ofps 24000/1001 -alang en -oac ${oac_opts} -ovc x264 -x264encopts preset=slow:crf=25:bitrate=${bitrate}:tune=${tune_type}:bframes=4:subq=8:frameref=6:partitions=all"
+#2017-12-28
+menc_cmd="${mencoder} ${vobfile} -sid 0 -forcedsubsonly -vf pullup,softskip,crop=${crop},hqdn3d=2:1:2,harddup -ofps 24000/1001 -alang en -oac ${oac_opts} -ovc x264 -x264encopts crf=18:bframes=4:preset=slower:tune=${tune_type}"
 
 
 #echo -e "\nStarting Transcode Pass 1..."
