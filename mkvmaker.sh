@@ -18,6 +18,7 @@
 
 mplayer="/usr/bin/mplayer"
 mencoder="/usr/bin/mencoder"
+ffmpeg="/usr/bin/ffmpeg"
 
 function _usage {
   cat <<END
@@ -52,7 +53,7 @@ Usage: $(basename "${0}") [-c] [-d] [-h] [-t] [-T] <file path>
 END
 }
 
-while getopts ":a:bc:dht:T" opt; do
+while getopts ":a:bc:dht:Tx" opt; do
 case ${opt} in
   a)
     if [[ ${oac_opts} ]] ; then
@@ -97,6 +98,9 @@ case ${opt} in
     ;;
   T)
     just_test=1
+    ;;
+  x)
+    use_x265=1
     ;;
   \?)
     echo "ERROR: Invalid option -${OPTARG}" >&2
@@ -164,6 +168,7 @@ fi
 
 
 name="$(basename "${vobfile}" .vob)"
+name="$(basename "${name}" .mkv)"
 
 # Set bitrate
 # Note: This is placebo as of 2017-12-28 update, as the
@@ -174,12 +179,16 @@ else
   bitrate=1400
 fi
 
-# Set mencoder base command
-#menc_cmd="mencoder ${vobfile} -sid 0 -forcedsubsonly -passlogfile ${name}.log -vf pullup,softskip,crop=${crop},hqdn3d=2:1:2,harddup -ofps 24000/1001 -alang en -oac faac -faacopts br=192:object=2 -ovc x264 -x264encopts bitrate=${bitrate}:tune=${tune_type}:bframes=4:pass="
-#menc_cmd="${mencoder} ${vobfile} -sid 0 -forcedsubsonly -vf pullup,softskip,crop=${crop},hqdn3d=2:1:2,harddup -ofps 24000/1001 -alang en -oac faac -faacopts br=192:object=2 -ovc x264 -x264encopts preset=slow:crf=25:bitrate=${bitrate}:tune=${tune_type}:bframes=4:subq=8:frameref=6:partitions=all"
-#menc_cmd="${mencoder} ${vobfile} -sid 0 -forcedsubsonly -vf pullup,softskip,crop=${crop},hqdn3d=2:1:2,harddup -ofps 24000/1001 -alang en -oac ${oac_opts} -ovc x264 -x264encopts preset=slow:crf=25:bitrate=${bitrate}:tune=${tune_type}:bframes=4:subq=8:frameref=6:partitions=all"
-#2017-12-28
-menc_cmd="${mencoder} ${vobfile} -sid 0 -forcedsubsonly -vf pullup,softskip,crop=${crop},hqdn3d=2:1:2,harddup -ofps 24000/1001 -alang en -oac ${oac_opts} -ovc x264 -x264encopts crf=21:bframes=4:preset=slow:tune=${tune_type}:aq_strength=1.2"
+if [[ ${use_x265} ]] ; then
+  enc_cmd="${ffmpeg} -forced_subs_only 1 -i ${vobfile} -map 0:m:language:eng -r 24 -filter:v "crop=${crop}" -filter:v pullup -c:v libx265 -crf 21 -c:a libmp3lame -b:a 192k -c:s copy"
+else
+  # Set mencoder base command
+  #menc_cmd="mencoder ${vobfile} -sid 0 -forcedsubsonly -passlogfile ${name}.log -vf pullup,softskip,crop=${crop},hqdn3d=2:1:2,harddup -ofps 24000/1001 -alang en -oac faac -faacopts br=192:object=2 -ovc x264 -x264encopts bitrate=${bitrate}:tune=${tune_type}:bframes=4:pass="
+  #menc_cmd="${mencoder} ${vobfile} -sid 0 -forcedsubsonly -vf pullup,softskip,crop=${crop},hqdn3d=2:1:2,harddup -ofps 24000/1001 -alang en -oac faac -faacopts br=192:object=2 -ovc x264 -x264encopts preset=slow:crf=25:bitrate=${bitrate}:tune=${tune_type}:bframes=4:subq=8:frameref=6:partitions=all"
+  #menc_cmd="${mencoder} ${vobfile} -sid 0 -forcedsubsonly -vf pullup,softskip,crop=${crop},hqdn3d=2:1:2,harddup -ofps 24000/1001 -alang en -oac ${oac_opts} -ovc x264 -x264encopts preset=slow:crf=25:bitrate=${bitrate}:tune=${tune_type}:bframes=4:subq=8:frameref=6:partitions=all"
+  #2017-12-28
+  enc_cmd="${mencoder} ${vobfile} -sid 0 -forcedsubsonly -vf pullup,softskip,crop=${crop},hqdn3d=2:1:2,harddup -ofps 24000/1001 -alang en -oac ${oac_opts} -ovc x264 -x264encopts crf=21:bframes=4:preset=slow:tune=${tune_type}:aq_strength=1.2"
+fi
 
 
 #echo -e "\nStarting Transcode Pass 1..."
@@ -193,7 +202,11 @@ menc_cmd="${mencoder} ${vobfile} -sid 0 -forcedsubsonly -vf pullup,softskip,crop
 #echo -e "\nStarting Transcode Pass 2..."
 echo -e "\nStarting Transcode..."
 #tpass2="${menc_cmd}2:subq=8:frameref=6:partitions=all -o ${name}.avi"
-tpass2="${menc_cmd} -o ${name}.avi"
+if [[ ${use_x265} ]] ; then
+  tpass2="${enc_cmd} ${name}-base.mkv"
+else
+  tpass2="${enc_cmd} -o ${name}.avi"
+fi
 if [[ ${just_test} ]] ; then
   echo "${tpass2}"
 else
@@ -209,7 +222,11 @@ else
 fi
 
 echo -e "\nMerging MKV Container..."
-merge="mkvmerge -o ${name}.mkv ${name}.avi ${name}.ac3"
+if [[ ${use_x265} ]] ; then
+  merge="mkvmerge -o ${name}.mkv ${name}-base.mkv ${name}.ac3"
+else
+  merge="mkvmerge -o ${name}.mkv ${name}.avi ${name}.ac3"
+fi
 setlang="mkvpropedit ${name}.mkv --edit track:a1 --set name='English Stereo' --set language=eng --edit track:a2 --set name='English AC3' --set language=eng"
 if [[ ${just_test} ]] ; then
   echo "${merge}"
@@ -221,7 +238,7 @@ fi
 
 if [[ ${delete_temp} ]] ; then
   echo -e "\nCleaning Up..."
-  cleanup="rm -f ${name}.log* ${name}.avi ${name}.ac3"
+  cleanup="rm -f ${name}.log* ${name}.avi ${name}-base.mkv ${name}.ac3"
   if [[ ${just_test} ]] ; then
     echo "${cleanup}"
   else
